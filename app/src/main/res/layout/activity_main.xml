@@ -9,12 +9,12 @@
     tools:context=".MainActivity">
 
     <com.rekoj.lockpatterncustom.pattern_lock.PatternLockView
-        android:id="@+id/pattern_lock_view"
+        android:id="@+id/patternLockView"
         android:layout_width="280dp"
         android:layout_height="280dp"
+        app:dotNormalSize="20dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

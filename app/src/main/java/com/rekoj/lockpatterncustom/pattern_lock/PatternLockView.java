@@ -13,9 +13,13 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.Shader;
 import android.os.Build;
 import android.os.Debug;
 import android.os.Parcel;
@@ -128,6 +132,7 @@ public class PatternLockView extends View {
     private int mPathEndAnimationDuration;
 
     private Paint mDotPaint;
+    private Paint mDotCenterPaint;
     private Paint mPathPaint;
 
     private List<PatternLockViewListener> mPatternListeners;
@@ -160,6 +165,8 @@ public class PatternLockView extends View {
 
     private Interpolator mFastOutSlowInInterpolator;
     private Interpolator mLinearOutSlowInInterpolator;
+
+    private Matrix rotate45Matrix = new Matrix();
 
     public PatternLockView(Context context) {
         this(context, null);
@@ -230,6 +237,10 @@ public class PatternLockView extends View {
         mDotPaint = new Paint();
         mDotPaint.setAntiAlias(true);
         mDotPaint.setDither(true);
+
+        mDotCenterPaint = new Paint();
+        mDotCenterPaint.setAntiAlias(true);
+        mDotCenterPaint.setDither(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
                 && !isInEditMode()) {
@@ -316,19 +327,6 @@ public class PatternLockView extends View {
         Path currentPath = mCurrentPath;
         currentPath.rewind();
 
-        // Draw the dots
-        for (int i = 0; i < sDotCount; i++) {
-            float centerY = getCenterYForRow(i);
-            for (int j = 0; j < sDotCount; j++) {
-                DotState dotState = mDotStates[i][j];
-                float centerX = getCenterXForColumn(j);
-                float size = dotState.mSize * dotState.mScale;
-                float translationY = dotState.mTranslateY;
-                drawCircle(canvas, (int) centerX, (int) centerY + translationY,
-                        size, drawLookupTable[i][j], dotState.mAlpha);
-            }
-        }
-
         // Draw the path of the pattern (unless we are in stealth mode)
         boolean drawPath = !mInStealthMode;
         if (drawPath) {
@@ -376,6 +374,19 @@ public class PatternLockView extends View {
                 mPathPaint.setAlpha((int) (calculateLastSegmentAlpha(
                         mInProgressX, mInProgressY, lastX, lastY) * 255f));
                 canvas.drawPath(currentPath, mPathPaint);
+            }
+        }
+
+        // Draw the dots
+        for (int i = 0; i < sDotCount; i++) {
+            float centerY = getCenterYForRow(i);
+            for (int j = 0; j < sDotCount; j++) {
+                DotState dotState = mDotStates[i][j];
+                float centerX = getCenterXForColumn(j);
+                float size = dotState.mSize * dotState.mScale;
+                float translationY = dotState.mTranslateY;
+                drawCircle(canvas, (int) centerX, (int) centerY + translationY,
+                        size, drawLookupTable[i][j], dotState.mAlpha);
             }
         }
     }
@@ -1125,13 +1136,13 @@ public class PatternLockView extends View {
     }
 
     private int getCurrentColor(boolean partOfPattern) {
-        if (!partOfPattern || mInStealthMode || mPatternInProgress) {
-            return mNormalStateColor;
+        if (!partOfPattern) {
+            return Color.parseColor("#ffe017");
         } else if (mPatternViewMode == WRONG) {
-            return mWrongStateColor;
+            return Color.parseColor("#ff0000");
         } else if (mPatternViewMode == CORRECT
                 || mPatternViewMode == AUTO_DRAW) {
-            return mCorrectStateColor;
+            return  Color.parseColor("#00ffbb");
         } else {
             throw new IllegalStateException("Unknown view mode " + mPatternViewMode);
         }
@@ -1139,9 +1150,19 @@ public class PatternLockView extends View {
 
     private void drawCircle(Canvas canvas, float centerX, float centerY,
                             float size, boolean partOfPattern, float alpha) {
+        LinearGradient correctGradient = new LinearGradient(centerX - size / 2f,
+                centerY,
+                centerX + size / 2f,
+                centerY,
+                Color.parseColor("#0089FD"),
+                Color.parseColor("#0047F1"),
+                Shader.TileMode.CLAMP);
+
+        mDotCenterPaint.setShader(correctGradient);
         mDotPaint.setColor(getCurrentColor(partOfPattern));
         mDotPaint.setAlpha((int) (alpha * 255));
         canvas.drawCircle(centerX, centerY, size / 2, mDotPaint);
+        canvas.drawCircle(centerX, centerY, size / 3, mDotCenterPaint);
     }
 
     /**

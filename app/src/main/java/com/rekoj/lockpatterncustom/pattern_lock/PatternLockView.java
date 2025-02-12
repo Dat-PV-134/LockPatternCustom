@@ -330,7 +330,7 @@ public class PatternLockView extends View {
         // Draw the path of the pattern (unless we are in stealth mode)
         boolean drawPath = !mInStealthMode;
         if (drawPath) {
-            mPathPaint.setColor(getCurrentColor(true));
+            mPathPaint.setColor(getPathColor());
 
             boolean anyCircles = false;
             float lastX = 0f;
@@ -1135,14 +1135,48 @@ public class PatternLockView extends View {
         return Math.min(1f, Math.max(0f, (fraction - 0.3f) * 4f));
     }
 
-    private int getCurrentColor(boolean partOfPattern) {
+    private LinearGradient getCustomGradient(float centerX, float centerY, float size, String startColor, String endColor) {
+        return  new LinearGradient(centerX - size / 2f,
+                centerY - size / 2f,
+                centerX + size / 2f,
+                centerY + size / 2f,
+                Color.parseColor(startColor),
+                Color.parseColor(endColor),
+                Shader.TileMode.CLAMP);
+    }
+
+    private LinearGradient getCurrentGradientColor(boolean partOfPattern, float centerX, float centerY, float size) {
         if (!partOfPattern) {
-            return Color.parseColor("#ffe017");
+            return getCustomGradient(centerX, centerY, size, "#C5C5C5", "#C5C5C5");
         } else if (mPatternViewMode == WRONG) {
-            return Color.parseColor("#ff0000");
+            return getCustomGradient(centerX, centerY, size, "#FF4545", "#C63636");
         } else if (mPatternViewMode == CORRECT
                 || mPatternViewMode == AUTO_DRAW) {
-            return  Color.parseColor("#00ffbb");
+            return getCustomGradient(centerX, centerY, size, "#0089FD", "#0047F1");
+        } else {
+            throw new IllegalStateException("Unknown view mode " + mPatternViewMode);
+        }
+    }
+
+    private int getCurrentColor(boolean partOfPattern) {
+        if (!partOfPattern) {
+            return Color.parseColor("#E6E6E6");
+        } else if (mPatternViewMode == WRONG) {
+            return Color.parseColor("#FFD3D3");
+        } else if (mPatternViewMode == CORRECT
+                || mPatternViewMode == AUTO_DRAW) {
+            return  Color.parseColor("#DFEAFF");
+        } else {
+            throw new IllegalStateException("Unknown view mode " + mPatternViewMode);
+        }
+    }
+
+    private int getPathColor() {
+        if (mPatternViewMode == WRONG) {
+            return Color.parseColor("#FF3B3B");
+        } else if (mPatternViewMode == CORRECT
+                || mPatternViewMode == AUTO_DRAW) {
+            return  Color.parseColor("#0089FD");
         } else {
             throw new IllegalStateException("Unknown view mode " + mPatternViewMode);
         }
@@ -1150,15 +1184,7 @@ public class PatternLockView extends View {
 
     private void drawCircle(Canvas canvas, float centerX, float centerY,
                             float size, boolean partOfPattern, float alpha) {
-        LinearGradient correctGradient = new LinearGradient(centerX - size / 2f,
-                centerY,
-                centerX + size / 2f,
-                centerY,
-                Color.parseColor("#0089FD"),
-                Color.parseColor("#0047F1"),
-                Shader.TileMode.CLAMP);
-
-        mDotCenterPaint.setShader(correctGradient);
+        mDotCenterPaint.setShader(getCurrentGradientColor(partOfPattern, centerX, centerY, size));
         mDotPaint.setColor(getCurrentColor(partOfPattern));
         mDotPaint.setAlpha((int) (alpha * 255));
         canvas.drawCircle(centerX, centerY, size / 2, mDotPaint);
